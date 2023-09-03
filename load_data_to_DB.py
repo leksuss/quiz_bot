@@ -44,6 +44,7 @@ def parse_file_content(file_content):
 
 
 def get_cleaned_answer(answer):
+    answer = answer.strip('". ').lower()
     return min(answer.split('.')[0], answer.split('(')[0], key=len)
 
 
