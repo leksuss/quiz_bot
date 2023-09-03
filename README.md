@@ -31,7 +31,7 @@ REDIS - redis configuration URL
 
 ## How to upload questions and answer in Redis database?
 
-Just run this script with `--path` param representing path to .txt files.
+Just run this script with `--path` param representing path to folder with .txt files.
 ```python
 python3 load_data_to_DB.py --path "path/to/folder/with/q&a"
 ```
