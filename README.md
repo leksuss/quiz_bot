@@ -27,7 +27,7 @@ TG_TOKEN - telegram help bot token
 VK_TOKEN - vk help bot token
 REDIS - redis configuration URL
 ```
-[Here is]([in URL format](https://redis-py.readthedocs.io/en/stable/connections.html#redis.Redis.from_url)) an examples of redis URL config
+[Here is](https://redis-py.readthedocs.io/en/stable/connections.html#redis.Redis.from_url) an examples of redis URL config
 
 ## How to upload questions and answer in Redis database?
 
