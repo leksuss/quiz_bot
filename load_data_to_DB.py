@@ -2,11 +2,14 @@ import argparse
 import hashlib
 import logging
 import os
+import pathlib
 
 from environs import Env
 from redis import Redis
 
 logger = logging.getLogger(__name__)
+
+ALLOWED_FILE_TYPES = '.txt',
 
 
 def read_args():
@@ -67,9 +70,11 @@ def run():
 
     filepaths = []
     for root, _, filenames in os.walk(args.path, topdown=False):
-        filepaths = [os.path.join(root, file) for file in filenames]
+        for file in filenames:
+            if pathlib.Path(file).suffix in ALLOWED_FILE_TYPES:
+                filepaths.append(os.path.join(root, file))
 
-    logger.info(f'Found {len(filepaths)} txt files')
+    logger.info(f'Found {len(filepaths)} files')
 
     for filepath in filepaths:
         count_added = 0
