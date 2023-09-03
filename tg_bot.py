@@ -9,9 +9,20 @@ from redis import Redis
 
 logger = logging.getLogger(__name__)
 
+
 class STATES(Enum):
    NO_QUESTION = 1
    CHECK_ANSWER = 2
+
+
+def reply_with_keyboard(reply_text, update):
+    custom_keyboard = [['Новый вопрос', 'Сдаться'],
+                       ['Мой счет']]
+    reply_markup = ReplyKeyboardMarkup(custom_keyboard)
+    update.message.reply_text(
+        reply_text,
+        reply_markup=reply_markup,
+    )
 
 
 def start(update, redis_client):
@@ -22,15 +33,10 @@ def start(update, redis_client):
     }
     redis_client.hset(user.id, mapping=setup_new_user_storage)
 
-    custom_keyboard = [['Новый вопрос', 'Сдаться'],
-                       ['Мой счет']]
-    reply_markup = ReplyKeyboardMarkup(custom_keyboard)
-    update.message.reply_text(
-        f'Привет, {user.first_name}! Добро пожаловать на викторину. '
-        f'Нажми на кнопку "Новый вопрос".'
-        f'Для отмены игры набери /cancel',
-        reply_markup=reply_markup,
-    )
+    reply_text = f'Привет, {user.first_name}! Добро пожаловать на викторину. ' \
+        f'Нажми на кнопку "Новый вопрос". ' \
+        f'Для отмены игры набери /cancel'
+    reply_with_keyboard(reply_text, update)
 
     logger.info(f'Новый пользователь {user.id} вступил в игру')
 
@@ -40,6 +46,8 @@ def start(update, redis_client):
 def cancel(update, redis_client):
     user = update.message.from_user
     user_score = redis_client.hget(user.id, 'score')
+    redis_client.delete(user.id)
+
     update.message.reply_text(
         f'Спасибо за игру! Вы заработали {user_score} очков.',
         reply_markup=ReplyKeyboardRemove()
@@ -57,11 +65,7 @@ def ask_question(update, redis_client):
     redis_client.hset(user.id, 'current_question_hash', random_question_hash)
     q_and_a = redis_client.hgetall(random_question_hash)
 
-    custom_keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
-    update.message.reply_text(
-        q_and_a['question'],
-        reply_markup = ReplyKeyboardMarkup(custom_keyboard),
-    )
+    reply_with_keyboard(q_and_a['question'], update)
 
     logger.debug(f'Пользователю {user.id} задан вопрос с id {random_question_hash}')
 
@@ -74,12 +78,8 @@ def surrender(update, redis_client):
     q_and_a = redis_client.hgetall(question_hash)
 
     reply_text = f'Вот тебе правильный ответ: {q_and_a["full_answer"]}\n' \
-   'Чтобы продолжить, нажми "Новый вопрос"'
-    custom_keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
-    update.message.reply_text(
-        reply_text,
-        reply_markup = ReplyKeyboardMarkup(custom_keyboard),
-    )
+                 f'Чтобы продолжить, нажми "Новый вопрос"'
+    reply_with_keyboard(reply_text, update)
 
     logger.debug(f'Пользователь {user.id} сдался, не ответив на вопрос c id {question_hash}')
 
@@ -95,11 +95,7 @@ def check_answer(update, redis_client):
         redis_client.hset(user.id, 'score', int(user_storage['score']) + 1)
 
         reply_text = 'Правильно! Счет увеличен! Для следующего вопроса нажми "Новый вопрос"'
-        custom_keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
-        update.message.reply_text(
-            reply_text,
-            reply_markup=ReplyKeyboardMarkup(custom_keyboard),
-        )
+        reply_with_keyboard(reply_text, update)
 
         logger.debug(f'Пользователь {user.id} ответил верно '
                      f'на вопрос с id {user_storage["current_question_hash"]}')
@@ -107,11 +103,7 @@ def check_answer(update, redis_client):
         return STATES.NO_QUESTION
     else:
         reply_text = 'Неверно, попробуй еще раз'
-        custom_keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
-        update.message.reply_text(
-            reply_text,
-            reply_markup=ReplyKeyboardMarkup(custom_keyboard),
-        )
+        reply_with_keyboard(reply_text, update)
 
         logger.debug(f'Пользователь {user.id} ответил неверно '
                      f'на вопрос с id {user_storage["current_question_hash"]}')
@@ -124,22 +116,14 @@ def get_score(update, redis_client):
     user_score = redis_client.hget(user.id, 'score')
 
     reply_text = f'Твой счет: {user_score} очков.'
-    custom_keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
-    update.message.reply_text(
-        reply_text,
-        reply_markup=ReplyKeyboardMarkup(custom_keyboard),
-    )
+    reply_with_keyboard(reply_text, update)
 
     logger.debug(f'Пользователь {user.id} запросил свой счет')
 
 
 def send_error_message(update, _):
     reply_text = f'Вот сейчас не понял тебя :('
-    custom_keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
-    update.message.reply_text(
-        reply_text,
-        reply_markup=ReplyKeyboardMarkup(custom_keyboard),
-    )
+    reply_with_keyboard(reply_text, update)
 
     logger.debug(f'Пользователь ответил не по сценарию')
 
